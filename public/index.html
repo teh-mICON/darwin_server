@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Sample Site</title>
+
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+  <style>
+    body {
+      padding-top: 50px;
+    }
+
+    canvas {
+      background: #ddd;
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.4.1.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.js"></script>
+  <script>
+    $(() => {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      $.get('/world', (result) => {
+        _.each(result, (tile) => {
+          const x = tile.x * 10;
+          const y = tile.y * 10;
+          if (tile.type == 'water')
+            ctx.fillStyle = 'blue';
+          else if (tile.type == 'tree')
+            ctx.fillStyle = 'brown';
+          else if (tile.type == 'mountain')
+            ctx.fillStyle = 'black';
+          else if (tile.type == 'hive')
+            ctx.fillStyle = 'green';
+          else if (tile.type == 'creature')
+            ctx.fillStyle = 'yellow';
+
+          // draw tile
+          ctx.fillRect(x, y, 10, 10);
+
+          if (tile.type == 'creature') {
+            switch (tile.facing) {
+              case 'up':
+                ctx.moveTo(x, y * 10);
+                ctx.lineTo(x + 10, tile.y);
+                ctx.stroke();
+                break;
+              case 'right':
+                ctx.moveTo(x + 10, y);
+                ctx.lineTo(x + 10, y + 10);
+                ctx.stroke();
+                break;
+              case 'down':
+                ctx.moveTo(x, y + 10);
+                ctx.lineTo(x + 10, y + 10);
+                ctx.stroke();
+                break;
+              case 'left':
+                ctx.moveTo(tile.x, tile.y);
+                ctx.lineTo(tile.x, tile.y + 10);
+                ctx.stroke();
+                break;
+
+            }
+            ctx.beginPath();
+            ctx.rect(tile.visibleRange.minX * 10, tile.visibleRange.minY * 10, tile.visibleRange.maxX * 10, tile.visibleRange.maxY * 10);
+            ctx.stroke();
+          }
+        })
+      })
+    });
+  </script>
+</head>
+
+<body>
+  <div class="container">
+    <canvas id="canvas" width="1000" height="500"></canvas>
+  </div>
+</body>
+
+</html>
