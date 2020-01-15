@@ -105,6 +105,9 @@ class World {
   getTilesByRange(minX, minY, maxX, maxY) {
     return _.filter(this.tiles, tile => tile.getX() >= minX && tile.getY() >= minY && tile.getX() <= maxX && tile.getY() <= maxY)
   }
+  getTilesByType(type) {
+    return _.filter(this.tiles, tile => tile.getType() == type);
+  }
 
   export() {
     return _.map(this.tiles, tile => tile.toJSON());

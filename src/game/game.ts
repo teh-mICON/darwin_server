@@ -23,6 +23,8 @@ class Game {
         delete this.creatures[creature.getId()]
       }
     });
+
+    _.each(this.getWorld().getTilesByType('tree'), tile => tile.getTree().regrow())
   }
 
   spawn() {

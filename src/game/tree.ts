@@ -14,6 +14,10 @@ class Tree {
 
   getFood() { return this.food }
 
+  regrow() {
+    this.food++;
+  }
+
   harvest() {
     const food = this.food;
     this.food = 0;
