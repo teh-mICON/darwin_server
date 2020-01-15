@@ -1,3 +1,5 @@
+const MAX_FOOD = 10;
+
 class Tree {
 
   private food = 0;
@@ -15,7 +17,8 @@ class Tree {
   getFood() { return this.food }
 
   regrow() {
-    this.food++;
+    const diff = MAX_FOOD - this.food;
+    this.food += diff / 33;
   }
 
   harvest() {

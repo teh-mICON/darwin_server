@@ -96,6 +96,7 @@ class Creature {
     this.food -= .01;
     this.water -= .01;
 
+    // hungry
     if (this.food <= -1) {
       this.handler.send('hunger', { intensity: this.food })
       this.energy -= 1;
@@ -104,6 +105,7 @@ class Creature {
       this.handler.send('hunger', { intensity: .1 })
       this.energy -= .1;
     }
+    // thirsty
     if (this.water <= -1) {
       this.handler.send('thirst', { intensity: this.water })
       this.energy -= 1;
