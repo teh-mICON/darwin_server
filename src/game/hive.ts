@@ -1,4 +1,3 @@
-import Species from './species'
 import Game from './game';
 class Hive {
 
@@ -6,11 +5,7 @@ class Hive {
   private x;
   private y;
 
-  private species: Species = null;
-  private game: Game;
-
-  constructor(game, id, x, y) {
-    this.game = game;
+  constructor(id, x, y) {
     this.id = id;
     this.x = x;
     this.y = y;
@@ -19,11 +14,6 @@ class Hive {
   getId() { return this.id }
   getX() { return this.x }
   getY() { return this.y }
-
-  available() { return this.species === null }
-  occupy(species) { this.species = species; }
-  vacate() { this.species = null; }
-  getSpecies() { return this.species; }
 }
 
 export default Hive;

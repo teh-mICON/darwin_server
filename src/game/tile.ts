@@ -2,7 +2,7 @@ import Tree from "./tree";
 import Creature from './creature';
 import Hive from './hive';
 
-abstract class Tile {
+export abstract class Tile {
   public abstract getX();
   public abstract getY();
   public abstract getType();
@@ -24,6 +24,15 @@ abstract class DefaultTile extends Tile {
   getX() { return this.x; }
   getY() { return this.y; }
   public abstract getType();
+
+  public toJSON() {
+    return {
+      x: this.x,
+      y: this.y,
+      type: this.getType(),
+    }
+  }
+
 }
 
 export class MountainTile extends DefaultTile {
@@ -49,6 +58,7 @@ export class TreeTile extends DefaultTile {
   public getType() {
     return 'tree';
   }
+  public getTree() { return this.tree; }
 }
 
 export class HiveTile extends DefaultTile {
@@ -77,5 +87,17 @@ export class CreatureTile extends Tile {
   getCreature() { return this.creature }
   public getType() {
     return 'creature';
+  }
+
+  public toJSON() {
+    return {
+      x: this.getX(),
+      y: this.getY(),
+      type: 'creature',
+      facing: this.creature.getFacing(),
+      age: this.creature.getAge(),
+      visibleRange: this.getCreature().getVisibleRange(),
+      speciesId: this.getCreature().getSpeciesId()
+    }
   }
 }

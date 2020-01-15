@@ -5,8 +5,10 @@ import Hive from './hive'
 import Tree from './tree'
 import Game from './game';
 import Creature from './creature';
-import { MountainTile, WaterTile, TreeTile, CreatureTile, HiveTile } from './tile'
-import Species from './species';
+import { Tile, MountainTile, WaterTile, TreeTile, CreatureTile, HiveTile } from './tile'
+
+const fs = require('fs').promises;
+
 class World {
   private tiles = [] as any;
   private trees = [] as any;
@@ -17,47 +19,35 @@ class World {
 
   private game: Game;
 
-  constructor(game) {
+  constructor(game, width, height) {
     this.game = game;
 
-    this.addWater(10, 10);
-    this.addWater(11, 10);
-    this.addWater(12, 10);
-    this.addWater(12, 11);
-    this.addWater(13, 11);
-    this.addWater(13, 12);
-    this.addWater(14, 12);
+    this.initialize(width, height);
+  }
+  async initialize(width, height) {
+    try {
+      const tilesJSON = await fs.readFile('world.json')
+      const tiles = JSON.parse(tilesJSON);
+      _.each(tiles, tile => this.addTile(tile.x, tile.y, tile.type));
+      return true;
+    } catch (error) {
+      _.times(width, i => { this.addMountain(0, i); this.addMountain(width - 1, i) })
+      _.times(height - 2, i => { this.addMountain(i + 1, 0); this.addMountain(i + 1, height - 1) })
+      return false;
+    }
+  }
 
-    this.addWater(70, 30);
-    this.addWater(71, 30);
-    this.addWater(72, 30);
-    this.addWater(71, 31);
-    this.addWater(71, 31);
-    this.addWater(71, 32);
-    this.addWater(71, 33);
-    this.addWater(71, 34);
-    this.addWater(71, 35);
-    this.addWater(70, 34);
+  addTile(x, y, type) {
+    switch (type) {
+      case 'mountain': this.addMountain(x, y); break;
+      case 'water': this.addWater(x, y); break;
+      case 'tree': this.addTree(x, y); break;
+      case 'hive': this.addHive(x, y); break;
+    }
+  }
 
-    this.addTree(30, 30);
-    this.addTree(70, 24);
-    this.addTree(90, 42);
-
-    _.times(100, i => { this.addMountain(i, 0); this.addMountain(i, 49) })
-    _.times(50, i => { this.addMountain(0, i); this.addMountain(99, i) })
-    this.addMountain(50, 30);
-    this.addMountain(50, 31);
-    this.addMountain(50, 32);
-    this.addMountain(50, 33);
-    this.addMountain(51, 33);
-    this.addMountain(51, 34);
-    this.addMountain(51, 35);
-    this.addMountain(52, 35);
-    this.addMountain(53, 35);
-    this.addMountain(53, 36);
-
-    this.addHive(10, 40)
-    this.addHive(90, 10)
+  removeTile(x, y) {
+    _.remove(this.tiles, (tile: Tile) => tile.getX() == x && tile.getY() == y)
   }
 
   addMountain(x, y) {
@@ -73,7 +63,7 @@ class World {
   }
   addHive(x, y) {
     const id = uuid();
-    const hive = new Hive(this, id, x, y);
+    const hive = new Hive(id, x, y);
     this.hives[id] = hive;
     this.tiles.push(new HiveTile(hive))
   }
@@ -82,51 +72,49 @@ class World {
     this.creatures.push(creature);
   }
 
-  removeCreatures(species: Species) {
+  removeCreature(creature: Creature) {
     this.tiles = _.filter(this.tiles, tile => {
       if (tile.getType() != 'creature')
         return true;
-      return tile.getCreature().getSpecies().getId() != species.getId();
+      return tile.getCreature().getId() != creature.getId();
     });
   }
 
-  registerSpeciesToHive(species) {
-    let hive = null;
-    _.each(this.hives, (possibleHive: Hive) => {
-      if (possibleHive.available()) {
-        hive = possibleHive;
-        hive.occupy(species)
-        return false;
-      }
-    })
-    if (hive === null) throw new Error('no available hives')
-    return hive;
-  }
 
-  getHiveForSpecies(species) {
-    return _.find(this.hives, (hive: Hive) => hive.getSpecies() == species);
-  }
+  getHives() { return this.hives; }
 
   isEmpty(x, y) {
     return !_.filter(this.tiles, tile => tile.getX() == x && tile.getY() == y).length;
   }
 
-  getTiles(minX, minY, maxX, maxY) {
-    /*_.map(this.tiles, tile => {
-      console.log(tile.export(),
-      tile.getX() >= minX, tile.getY() >= minY, tile.getX() <= maxX, tile.getY <= maxY)
-    })*/
-    console.log('ACCESSING TILES', minX, minY, maxX, maxY)
-    return _.filter(this.tiles, tile => tile.getX() >= minX && tile.getY() >= minY && tile.getX() <= maxX && tile.getY <= maxY)
+  getTiles() { return this.tiles; }
+  getTilesByCoordinates(coordinates, speciesId = null) {
+    const tiles = [];
+    _.each(coordinates, coordinate => {
+      const filtered = _.filter(this.tiles, (tile: Tile) => {
+        return tile.getX() == coordinate.x && tile.getY() == coordinate.y
+      });
+      if (!filtered.length) {
+        tiles.push(null)
+      } else {
+        tiles.push(filtered[0])
+      }
+    });
+    return tiles;
+  }
+  getTilesByRange(minX, minY, maxX, maxY) {
+    return _.filter(this.tiles, tile => tile.getX() >= minX && tile.getY() >= minY && tile.getX() <= maxX && tile.getY() <= maxY)
   }
 
   export() {
-    return _.map(this.tiles, tile => {
-      if(tile.getType() != 'creature')
-        return { x: tile.getX(), y: tile.getY(), type: tile.getType() }
-      else
-      return { x: tile.getX(), y: tile.getY(), type: tile.getType(), visibleRange: tile.getCreature().getVisibleRange(), facing: tile.getCreature().getFacing() }
-    });
+    return _.map(this.tiles, tile => tile.toJSON());
+  }
+
+  async save() {
+    console.log('SAVING')
+    const tiles = _.filter(this.export(), (tile: any) => tile.type != 'creature');
+
+    await fs.writeFile('world.json', JSON.stringify(tiles));
   }
 }
 
