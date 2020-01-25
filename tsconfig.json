@@ -15,6 +15,7 @@
     "noImplicitReturns": false,
     "noUnusedLocals": false,
     "strictPropertyInitialization": false,
+    "esModuleInterop": true,
     "types": [
       "node"
     ],
