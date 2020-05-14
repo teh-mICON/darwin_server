@@ -17,6 +17,6 @@ new DatabaseServer().listen(8001);
 new UIServer(simulation).listen(8002);
 
 // start simulation
-const tickRate = 100;
+const tickRate = 5;
 console.log('starting simulation with tickrate ', tickRate)
 simulation.start(tickRate)

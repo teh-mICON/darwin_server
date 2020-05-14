@@ -137,7 +137,7 @@ export class Handler {
       creature.moveTo(x, y)
       this.send('move', { x, y })
     } else {
-      creature.pain(.1);
+      // creature.pain(.1);
     }
   }
 
