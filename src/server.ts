@@ -30,6 +30,7 @@ new UIServer(simulation, PORTS).listen();
 
 // start simulation
 const tickRate = 15;
+
 console.log('starting simulation with tickrate ', tickRate)
 simulation.start(tickRate)
 
