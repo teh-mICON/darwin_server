@@ -91,14 +91,19 @@ export class CreatureTile extends Tile {
 
   public toJSON() {
     return {
+      type: 'creature',
+      id: this.getCreature().getID(),
       x: this.getX(),
       y: this.getY(),
-      type: 'creature',
+      apm: this.getCreature().getAPM(),
+      actions: this.getCreature().getActions(),
       facing: this.creature.getFacing(),
       age: this.creature.getAge(),
+      energy: this.creature.getEnergy(),
+      food: this.creature.getFood(),
+      water: this.creature.getWater(),
       visibleRange: this.getCreature().getVisibleRange(),
       speciesID: this.getCreature().getSpeciesID(),
-      raceID: this.getCreature().getRaceID()
     }
   }
 }

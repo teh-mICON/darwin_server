@@ -6,6 +6,7 @@ const fs = require('fs').promises;
 const url = require('url');
 const uuid = require('uuid/v4')
 
+declare var PORTS;
 /**
  * This server handles HTTP request towards the game state from a neutral context.
  * No agent is involved in these requests. The main purpose is to handle requests
@@ -16,19 +17,22 @@ const uuid = require('uuid/v4')
  * b) express does not play nice with `Simulation` so raw http server is used here.
  */
 export default class UIServer {
-  private simulation: Simulation;
   
-  constructor(simulation) {
+  private simulation: Simulation;
+  private ports;
+  
+  constructor(simulation, ports) {
     this.simulation = simulation;
+    this.ports = ports;
   }
 
-  listen(port) {
+  listen() {
     http.createServer(async (request, response) => {
       const controller = new Handler(request, response, this.simulation);
       controller.handleRequest();
-    }).listen(8002);
+    }).listen(this.ports.ui);
 
-    console.log('UIServer listening on', port)
+    console.log('UIServer listening on', this.ports.ui)
   }
 }
 

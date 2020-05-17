@@ -15,9 +15,10 @@ class Simulation {
     let tick = 0;
     const loop = () => {
       this.tick();
-      if((tick++ % 1000) == 0) {
+      if((tick % 10000) == 0) {
         console.log('tick #', tick + '; creatures alive atm:', Object.keys(this.getCreatures()).length)
       }
+      tick++;
       setTimeout(loop, 1000 / tickRate);
     };
     loop();
@@ -34,38 +35,45 @@ class Simulation {
     });
 
     // regrow food on trees
-    //TODO: trees centrally here?
     _.each(this.getWorld().getTilesByType('tree'), tile => tile.getTree().regrow())
   }
 
   spawn() {
-    const hive: Hive = _.sample(this.world.getHives());
-    const hivePositionX = hive.getX()
-    const hivePositionY = hive.getY()
+    const spawnAtHive = (hive: Hive)  => {
+      const hivePositionX = hive.getX()
+      const hivePositionY = hive.getY()
+  
+      let creature = null;
+  
+      const possibleSpawnLocationsX = _.range(hivePositionX -1, hivePositionX +2)
+      const possibleSpawnLocationsY = _.range(hivePositionY -1, hivePositionY +2)
+  
+      const possibleSpawnLocations = [];
+  
+      _.each(possibleSpawnLocationsX, pslX => {
+        _.each(possibleSpawnLocationsY, pslY => {
+          if(pslX == hivePositionX && pslY == hivePositionY) return;
+          if(!this.world.isEmpty(pslX, pslY)) return;
+          possibleSpawnLocations.push({x: pslX, y: pslY});
+        })
+      })
+  
+      if(possibleSpawnLocations.length) {
+        const key = _.sample(_.range(0, possibleSpawnLocations.length));
+        const x = possibleSpawnLocations[key].x
+        const y = possibleSpawnLocations[key].y
+  
+        creature = new Creature(this, x, y);
+      }
+      return creature;
+    }
 
     let creature = null;
+    _.each(_.shuffle(this.world.getHives()), hive => {
+      creature = spawnAtHive(hive);
+      if(creature !== null) return false;
+    });
 
-    const possibleSpawnLocationsX = _.range(hivePositionX -1, hivePositionX +2)
-    const possibleSpawnLocationsY = _.range(hivePositionY -1, hivePositionY +2)
-
-    const possibleSpawnLocations = [];
-
-    _.each(possibleSpawnLocationsX, pslX => {
-      _.each(possibleSpawnLocationsY, pslY => {
-        if(pslX == hivePositionX && pslY == hivePositionY) return;
-        if(!this.world.isEmpty(pslX, pslY)) return;
-        possibleSpawnLocations.push({x: pslX, y: pslY});
-      })
-    })
-
-    while(possibleSpawnLocations.length) {
-      const key = _.sample(_.range(0, possibleSpawnLocations.length));
-      const x = possibleSpawnLocations[key].x
-      const y = possibleSpawnLocations[key].y
-
-      creature = new Creature(this, x, y);
-      break;
-    }
     if(creature === null) {
       throw new Error('Could not spawn creature, no space available')
     }
@@ -78,6 +86,9 @@ class Simulation {
 
   despawn(creature: Creature) {
     this.world.removeCreature(creature)
+    this.creatures = _.pickBy(this.creatures, (candidate: Creature) => {
+      return candidate.getID() != creature.getID();
+    });
   }
 
   getWorld() { return this.world; }

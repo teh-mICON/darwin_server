@@ -3,6 +3,8 @@ import express from 'express'
 import cors from 'cors'
 import Keyv from 'keyv'
 
+declare var PORTS
+
 /**
  * This server takes HTTP requests from agents and stores in a key/value database
  * This is to retain information after agent restarts about species / creatures / hi scores etc.
@@ -11,9 +13,12 @@ export default class API {
 
   private db: Keyv;
   private express;
+  private port
 
-  constructor() {
-    this.db = new Keyv('sqlite://database/database.sqlite');
+  constructor(port) {
+    this.port = port;
+
+    this.db = new Keyv('sqlite://database/database_' + this.port + '.sqlite');
     this.express = express();
 
     this.express.use(cors());
@@ -27,7 +32,6 @@ export default class API {
         next();
       });
     });
-    //this.express.use(bodyParser.json());
 
     // get & set
     this.express.get('/get/:key', async (request: any, response) => {
@@ -50,9 +54,8 @@ export default class API {
   }
 
 
-  listen(port) {
-    this.express.listen(port);
-
-    console.log('DatabaseServer listening on', port)
+  listen() {
+    this.express.listen(this.port);
+    console.log('DatabaseServer listening on', this.port)
   }
 }

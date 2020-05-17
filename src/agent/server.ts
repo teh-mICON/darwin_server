@@ -3,6 +3,8 @@ import Creature from '../simulation/creature';
 import * as WebSocket from 'ws'
 import * as _ from 'lodash'
 
+declare var PORTS;
+
 /**
  * An Agent is a puppet master of a creature. In most cases it will be some kind of AI,
  * but can be human as well.
@@ -13,30 +15,33 @@ export default class AgentServer {
 
   private simulation: Simulation;
   private handlers = [];
+  private ports;
 
-  constructor(simulation) {
+  constructor(simulation, ports) {
     this.simulation = simulation;
+    this.ports = ports;
   }
 
-  listen(port) {
+  listen() {
     // create new websocket
-    const wss = new WebSocket.Server({ port });
+    const wss = new WebSocket.Server({ port: this.ports.agent });
     wss.on('connection', (socket) => {
       // on connect, create handler for messages
       let handler;
       try {
         handler = new Handler(socket, this.simulation);
       } catch (error) {
+        console.log('Handler creation error', error)
         socket.close();
         return;
       }
       // add handler to handlers array
       this.handlers.push(handler)
     
-      // send init after 1s
+      // send init after 100ms
       setTimeout(() => {
         handler.init()
-      }, 1000)
+      }, 100)
     
       // forward messages to handler
       socket.on('message', (message: string) => {
@@ -54,7 +59,7 @@ export default class AgentServer {
       })
     });
 
-    console.log('AgentServer listening on', port)
+    console.log('AgentServer listening on', this.ports.agent)
   }
 }
 
@@ -76,7 +81,7 @@ export class Handler {
   }
 
   init() {
-    this.send('init', { id: this.creature.getID(), msg: 'Species initialized, you are now cleared to play' });
+    this.send('init', { id: this.creature.getID(), msg: 'Creature initialized, you are now cleared to play' });
   }
   status() {
     this.send('status', { creature: this.creature.export() });
@@ -88,7 +93,6 @@ export class Handler {
 
   die(age) {
     this.send('die', { age })
-    this.destroy();
     this.socket.close();
   }
 
@@ -102,7 +106,6 @@ export class Handler {
   }
 
   _init(msg) {
-    this.creature.setRaceID(msg.raceID);
     this.creature.setSpeciesID(msg.speciesID);
   }
 
@@ -137,7 +140,7 @@ export class Handler {
       creature.moveTo(x, y)
       this.send('move', { x, y })
     } else {
-      creature.pain(.1);
+      // creature.pain(.1);
     }
   }
 

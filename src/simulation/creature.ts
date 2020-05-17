@@ -7,7 +7,7 @@ class Creature {
   private simulation: Simulation;
   private x;
   private y;
-  private id = uuid();
+  private id = uuid().substr(0, 6);
   private speciesID = '';
   private raceID = '';
   private facing = 'down';
@@ -23,6 +23,10 @@ class Creature {
 
   private handler: Handler;
 
+  private statuses = 0;
+  private startDate: Date = new Date();
+  private actions = 0;
+
   constructor(simulation, x, y) {
     this.simulation = simulation;
     this.x = x;
@@ -33,7 +37,6 @@ class Creature {
 
   getX() { return this.x; }
   getY() { return this.y; }
-  getID() { return this.id; }
   getFacing() { return this.facing }
   getAge() { return this.age; }
   getFood() { return this.food }
@@ -43,19 +46,20 @@ class Creature {
 
   setSpeciesID(speciesID) { this.speciesID = speciesID; }
   getSpeciesID() { return this.speciesID; }
-  setRaceID(raceID) { this.raceID = raceID; }
-  getRaceID() { return this.raceID; }
+  getID() { return this.id; }
 
   getMove() { return this.move }
 
   turn(direction) {
     this.facing = direction;
     this.handler.send('turn', { direction });
+    this.actions++;
   }
   moveTo(x, y) {
     this.x = x;
     this.y = y;
     this.move += 3;
+    this.actions++;
   }
 
   getVisibleRange() {
@@ -77,20 +81,24 @@ class Creature {
 
   pain(intensity) {
     this.energy -= intensity;
-    this.handler.send('pain', { intensity: 1 });
+    this.handler.send('pain', { intensity });
   }
   eat(food) {
     this.food += food;
     this.handler.send('eat', { food });
+    this.actions++;
   }
   drink(water) {
     this.water += water;
     this.handler.send('drink', { water });
+    this.actions++;
   }
   feed(creature) {
     creature.pain(1);
-    this.energy += 1;
+    if(this.energy < 100)
+      this.energy += 1;
     this.handler.send('feed')
+    this.actions++;
   }
 
   takeEnergy(amount) { this.energy -= amount }
@@ -100,22 +108,16 @@ class Creature {
     this.water -= .01;
 
     // hungry
-    if (this.food <= -1) {
-      this.handler.send('hunger', { intensity: this.food })
-      this.energy -= 1;
-    }
-    else if (this.food <= .1) {
-      this.handler.send('hunger', { intensity: .1 })
-      this.energy -= .1;
+    if (this.food <= .1) {
+      const intensity = _.max([.1, Math.abs(this.food)]);
+      this.handler.send('hunger', { intensity })
+      this.energy -= intensity;
     }
     // thirsty
     if (this.water <= -1) {
-      this.handler.send('thirst', { intensity: this.water })
-      this.energy -= 1;
-    }
-    else if (this.water <= .1) {
-      this.handler.send('thirst', { intensity: .1 })
-      this.energy -= .1;
+      const intensity = _.max([.1, Math.abs(this.water)]);
+      this.handler.send('thirst', { intensity })
+      this.energy -= intensity;
     }
 
     if (--this.move < 0) {
@@ -123,6 +125,7 @@ class Creature {
     }
 
     if (this.statuOnTick) {
+      this.statuses++;
       this.handler.status();
       this.statuOnTick = false;
     }
@@ -132,12 +135,12 @@ class Creature {
     // lodash range stops _before_ end
     const range = (start, end) => {
       const result = [];
-      if(start < end) {
-        for(let i = start; i <= end; i++) {
+      if (start < end) {
+        for (let i = start; i <= end; i++) {
           result.push(i);
         }
       } else {
-        for(let i = start; i >= end; i--) {
+        for (let i = start; i >= end; i--) {
           result.push(i);
         }
       }
@@ -147,38 +150,38 @@ class Creature {
     let xRange, yRange;
     switch (this.facing) {
       case 'up':
-        xRange = range(this.x -2, this.x +2);
-        yRange = range(this.y -3, this.y -1);
+        xRange = range(this.x - 2, this.x + 2);
+        yRange = range(this.y - 3, this.y - 1);
         _.each(yRange, y => {
           _.each(xRange, x => {
-            coordinates.push({x, y})
+            coordinates.push({ x, y })
           })
         })
         return coordinates;
       case 'right':
-        yRange = range(this.y +2, this.y -2);
-        xRange = range(this.x +3, this.x +1);
+        yRange = range(this.y + 2, this.y - 2);
+        xRange = range(this.x + 3, this.x + 1);
         _.each(xRange, x => {
           _.each(yRange, y => {
-            coordinates.push({x, y})
+            coordinates.push({ x, y })
           })
         })
         return coordinates;
       case 'down':
-        xRange = range(this.x +2, this.x -2);
-        yRange = range(this.y +3, this.y +1);
+        xRange = range(this.x + 2, this.x - 2);
+        yRange = range(this.y + 3, this.y + 1);
         _.each(yRange, y => {
           _.each(xRange, x => {
-            coordinates.push({x, y})
+            coordinates.push({ x, y })
           })
         })
         return coordinates;
       case 'left':
-        yRange = range(this.y -2, this.y +2);
-        xRange = range(this.x -3, this.x -1);
+        yRange = range(this.y - 2, this.y + 2);
+        xRange = range(this.x - 3, this.x - 1);
         _.each(xRange, x => {
           _.each(yRange, y => {
-            coordinates.push({x, y})
+            coordinates.push({ x, y })
           })
         })
         return coordinates;
@@ -193,6 +196,15 @@ class Creature {
   die() {
     this.handler.die(this.age)
   }
+  
+  getActions() {
+    return this.actions;
+  }
+  getAPM() {
+    const time = new Date() as any - (this.startDate as any);
+    const minutes = time / 1000 / 60;
+    return this.actions / minutes;
+  }
 
   export() {
     return {
@@ -202,8 +214,8 @@ class Creature {
       water: this.water,
       energy: this.energy,
       age: this.age,
+      id: this.id,
       speciesID: this.speciesID,
-      raceID: this.raceID,
       vision: _.map(this.getVision(), tile => tile !== null ? tile.toJSON() : null)
     }
   }
